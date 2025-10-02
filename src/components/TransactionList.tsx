@@ -1,18 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Transaction } from "./TransactionForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowDownCircle, ArrowUpCircle, Filter } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Filter, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface TransactionListProps {
   transactions: Transaction[];
+  onDeleteTransaction: (id: string) => void;
 }
 
-export function TransactionList({ transactions }: TransactionListProps) {
+export function TransactionList({ transactions, onDeleteTransaction }: TransactionListProps) {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterMonth, setFilterMonth] = useState<string>("all");
 
@@ -23,6 +26,11 @@ export function TransactionList({ transactions }: TransactionListProps) {
   });
 
   const months = Array.from(new Set(transactions.map((t) => t.date.substring(0, 7)))).sort().reverse();
+
+  const handleDelete = (id: string) => {
+    onDeleteTransaction(id);
+    toast.success("Transação excluída com sucesso!");
+  };
 
   return (
     <Card className="border-border/50">
@@ -69,12 +77,13 @@ export function TransactionList({ transactions }: TransactionListProps) {
                 <TableHead>Categoria</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     Nenhuma transação encontrada
                   </TableCell>
                 </TableRow>
@@ -104,6 +113,16 @@ export function TransactionList({ transactions }: TransactionListProps) {
                         {transaction.type === "receita" ? "+" : "-"}
                         R$ {transaction.amount.toFixed(2)}
                       </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(transaction.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

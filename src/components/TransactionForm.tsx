@@ -18,19 +18,21 @@ export interface Transaction {
 
 interface TransactionFormProps {
   onAddTransaction: (transaction: Omit<Transaction, "id">) => void;
+  categories: {
+    receita: string[];
+    despesa: string[];
+  };
+  onAddCategory: (type: "receita" | "despesa", category: string) => void;
 }
 
-const categories = {
-  receita: ["Salário", "Freelance", "Investimentos", "Outros"],
-  despesa: ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Educação", "Outros"],
-};
-
-export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
+export function TransactionForm({ onAddTransaction, categories, onAddCategory }: TransactionFormProps) {
   const [type, setType] = useState<"receita" | "despesa">("despesa");
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [newCategory, setNewCategory] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +55,16 @@ export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
     setDescription("");
     setCategory("");
     toast.success(`${type === "receita" ? "Receita" : "Despesa"} adicionada com sucesso!`);
+  };
+
+  const handleAddNewCategory = () => {
+    if (newCategory.trim()) {
+      onAddCategory(type, newCategory.trim());
+      setCategory(newCategory.trim());
+      setNewCategory("");
+      setIsAddingCategory(false);
+      toast.success("Categoria adicionada!");
+    }
   };
 
   return (
@@ -81,18 +93,38 @@ export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
 
             <div className="space-y-2">
               <Label>Categoria</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories[type].map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
+              {isAddingCategory ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="Nova categoria"
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddNewCategory())}
+                  />
+                  <Button type="button" onClick={handleAddNewCategory} size="sm">
+                    OK
+                  </Button>
+                  <Button type="button" onClick={() => setIsAddingCategory(false)} variant="outline" size="sm">
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories[type].map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__add_new__" onSelect={() => setIsAddingCategory(true)}>
+                      + Adicionar nova categoria
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">

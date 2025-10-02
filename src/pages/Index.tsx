@@ -15,60 +15,12 @@ import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Ca
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-// Mock data inicial para demonstração
-const initialTransactions: Transaction[] = [
-  {
-    id: "1",
-    type: "receita",
-    category: "Salário",
-    amount: 5000,
-    description: "Salário mensal",
-    date: "2025-01-05",
-  },
-  {
-    id: "2",
-    type: "despesa",
-    category: "Moradia",
-    amount: 1200,
-    description: "Aluguel",
-    date: "2025-01-10",
-  },
-  {
-    id: "3",
-    type: "despesa",
-    category: "Alimentação",
-    amount: 450,
-    description: "Supermercado",
-    date: "2025-01-15",
-  },
-  {
-    id: "4",
-    type: "despesa",
-    category: "Transporte",
-    amount: 320,
-    description: "Combustível e transporte",
-    date: "2025-01-18",
-  },
-  {
-    id: "5",
-    type: "receita",
-    category: "Freelance",
-    amount: 1500,
-    description: "Projeto freelance",
-    date: "2025-01-20",
-  },
-  {
-    id: "6",
-    type: "despesa",
-    category: "Lazer",
-    amount: 280,
-    description: "Cinema e restaurantes",
-    date: "2025-01-22",
-  },
-];
-
 const Index = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState({
+    receita: ["Salário", "Freelance", "Investimentos", "Outros"],
+    despesa: ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Educação", "Outros"],
+  });
 
   const handleAddTransaction = (transaction: Omit<Transaction, "id">) => {
     const newTransaction: Transaction = {
@@ -76,6 +28,19 @@ const Index = () => {
       id: Date.now().toString(),
     };
     setTransactions([newTransaction, ...transactions]);
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    setTransactions(transactions.filter((t) => t.id !== id));
+  };
+
+  const handleAddCategory = (type: "receita" | "despesa", category: string) => {
+    if (!categories[type].includes(category)) {
+      setCategories({
+        ...categories,
+        [type]: [...categories[type], category],
+      });
+    }
   };
 
   // Cálculos
@@ -285,10 +250,17 @@ const Index = () => {
         </div>
 
         {/* Formulário de Transação */}
-        <TransactionForm onAddTransaction={handleAddTransaction} />
+        <TransactionForm 
+          onAddTransaction={handleAddTransaction}
+          categories={categories}
+          onAddCategory={handleAddCategory}
+        />
 
         {/* Lista de Transações */}
-        <TransactionList transactions={transactions} />
+        <TransactionList 
+          transactions={transactions}
+          onDeleteTransaction={handleDeleteTransaction}
+        />
       </div>
     </div>
   );
