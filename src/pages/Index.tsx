@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { MetricCard } from "@/components/MetricCard";
 import { TransactionForm, Transaction } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
+import { CreditCardManager, CreditCardType } from "@/components/CreditCardManager";
+import { CategoryManager } from "@/components/CategoryManager";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -11,12 +13,15 @@ import {
   PieChart as PieChartIcon 
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [creditCards, setCreditCards] = useState<CreditCardType[]>([]);
+  const [activeWallet, setActiveWallet] = useState<"principal" | "investimentos">("principal");
   const [categories, setCategories] = useState({
     receita: ["Salário", "Freelance", "Investimentos", "Outros"],
     despesa: ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Educação", "Outros"],
@@ -43,13 +48,34 @@ const Index = () => {
     }
   };
 
+  const handleDeleteCategory = (type: "receita" | "despesa", category: string) => {
+    setCategories({
+      ...categories,
+      [type]: categories[type].filter((c) => c !== category),
+    });
+  };
+
+  const handleAddCard = (card: Omit<CreditCardType, "id">) => {
+    const newCard: CreditCardType = {
+      ...card,
+      id: Date.now().toString(),
+    };
+    setCreditCards([...creditCards, newCard]);
+  };
+
+  const handleDeleteCard = (id: string) => {
+    setCreditCards(creditCards.filter((c) => c.id !== id));
+  };
+
   // Cálculos
   const metrics = useMemo(() => {
-    const totalReceitas = transactions
+    const walletTransactions = transactions.filter((t) => t.wallet === activeWallet);
+    
+    const totalReceitas = walletTransactions
       .filter((t) => t.type === "receita")
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const totalDespesas = transactions
+    const totalDespesas = walletTransactions
       .filter((t) => t.type === "despesa")
       .reduce((sum, t) => sum + t.amount, 0);
 
@@ -62,7 +88,7 @@ const Index = () => {
       saldo,
       percentualEconomia,
     };
-  }, [transactions]);
+  }, [transactions, activeWallet]);
 
   // Dados mensais para gráficos
   const monthlyData = useMemo(() => {
@@ -77,7 +103,7 @@ const Index = () => {
 
       const monthTransactions = transactions.filter((t) => {
         const date = new Date(t.date);
-        return date >= start && date <= end;
+        return date >= start && date <= end && t.wallet === activeWallet;
       });
 
       const receitas = monthTransactions
@@ -95,14 +121,14 @@ const Index = () => {
         saldo: receitas - despesas,
       };
     });
-  }, [transactions]);
+  }, [transactions, activeWallet]);
 
   // Dados por categoria
   const categoryData = useMemo(() => {
     const categories: Record<string, number> = {};
     
     transactions
-      .filter((t) => t.type === "despesa")
+      .filter((t) => t.type === "despesa" && t.wallet === activeWallet)
       .forEach((t) => {
         categories[t.category] = (categories[t.category] || 0) + t.amount;
       });
@@ -111,7 +137,7 @@ const Index = () => {
       name,
       value,
     }));
-  }, [transactions]);
+  }, [transactions, activeWallet]);
 
   const COLORS = ["hsl(210, 100%, 50%)", "hsl(160, 80%, 45%)", "hsl(320, 100%, 60%)", "hsl(280, 80%, 65%)", "hsl(40, 100%, 55%)"];
 
@@ -125,6 +151,14 @@ const Index = () => {
             Gerencie suas finanças de forma simples e eficiente
           </p>
         </div>
+
+        {/* Tabs para Carteiras */}
+        <Tabs value={activeWallet} onValueChange={(v) => setActiveWallet(v as "principal" | "investimentos")}>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="principal">Carteira Principal</TabsTrigger>
+            <TabsTrigger value="investimentos">Investimentos</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {/* Cards de Métricas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -249,16 +283,30 @@ const Index = () => {
           </Card>
         </div>
 
+        {/* Gerenciamento */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CreditCardManager 
+            cards={creditCards}
+            onAddCard={handleAddCard}
+            onDeleteCard={handleDeleteCard}
+          />
+          <CategoryManager
+            categories={categories}
+            onDeleteCategory={handleDeleteCategory}
+          />
+        </div>
+
         {/* Formulário de Transação */}
         <TransactionForm 
           onAddTransaction={handleAddTransaction}
           categories={categories}
           onAddCategory={handleAddCategory}
+          creditCards={creditCards}
         />
 
         {/* Lista de Transações */}
         <TransactionList 
-          transactions={transactions}
+          transactions={transactions.filter((t) => t.wallet === activeWallet)}
           onDeleteTransaction={handleDeleteTransaction}
         />
       </div>
