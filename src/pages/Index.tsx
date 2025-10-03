@@ -9,14 +9,7 @@ import { CardManager } from "@/components/CardManager";
 import { CategoryManagerButton } from "@/components/CategoryManagerButton";
 import { MonthNavigator } from "@/components/MonthNavigator";
 import { calculateCreditCardExpensesForMonth } from "@/lib/installmentCalculator";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Wallet, 
-  PiggyBank,
-  BarChart3,
-  PieChart as PieChartIcon 
-} from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, ChartBar as BarChart3, ChartPie as PieChartIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";

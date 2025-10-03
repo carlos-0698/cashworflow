@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Transaction } from "./TransactionForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowDownCircle, ArrowUpCircle, Filter, Trash2 } from "lucide-react";
+import { CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Filter, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
