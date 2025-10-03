@@ -1,9 +1,11 @@
 import { useState, useMemo } from "react";
 import { MetricCard } from "@/components/MetricCard";
-import { TransactionForm, Transaction } from "@/components/TransactionForm";
+import { Transaction } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
-import { CreditCardManager, CreditCardType } from "@/components/CreditCardManager";
-import { CategoryManager } from "@/components/CategoryManager";
+import { CreditCardType } from "@/components/CreditCardManager";
+import { WalletManager, WalletType } from "@/components/WalletManager";
+import { QuickAddButton } from "@/components/QuickAddButton";
+import { ManagementMenu } from "@/components/ManagementMenu";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -21,7 +23,8 @@ import { ptBR } from "date-fns/locale";
 const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [creditCards, setCreditCards] = useState<CreditCardType[]>([]);
-  const [activeWallet, setActiveWallet] = useState<"principal" | "investimentos">("principal");
+  const [wallets, setWallets] = useState<WalletType[]>([]);
+  const [activeWallet, setActiveWallet] = useState<string>("");
   const [categories, setCategories] = useState({
     receita: ["Salário", "Freelance", "Investimentos", "Outros"],
     despesa: ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Educação", "Outros"],
@@ -65,6 +68,24 @@ const Index = () => {
 
   const handleDeleteCard = (id: string) => {
     setCreditCards(creditCards.filter((c) => c.id !== id));
+  };
+
+  const handleAddWallet = (wallet: Omit<WalletType, "id">) => {
+    const newWallet: WalletType = {
+      ...wallet,
+      id: Date.now().toString(),
+    };
+    setWallets([...wallets, newWallet]);
+    if (!activeWallet) {
+      setActiveWallet(newWallet.id);
+    }
+  };
+
+  const handleDeleteWallet = (id: string) => {
+    setWallets(wallets.filter((w) => w.id !== id));
+    if (activeWallet === id) {
+      setActiveWallet(wallets[0]?.id || "");
+    }
   };
 
   // Cálculos
@@ -152,13 +173,34 @@ const Index = () => {
           </p>
         </div>
 
+        {/* Header Actions */}
+        <div className="flex items-center gap-2">
+          <WalletManager
+            wallets={wallets}
+            onAddWallet={handleAddWallet}
+            onDeleteWallet={handleDeleteWallet}
+          />
+          <ManagementMenu
+            creditCards={creditCards}
+            onAddCard={handleAddCard}
+            onDeleteCard={handleDeleteCard}
+            categories={categories}
+            onDeleteCategory={handleDeleteCategory}
+          />
+        </div>
+
         {/* Tabs para Carteiras */}
-        <Tabs value={activeWallet} onValueChange={(v) => setActiveWallet(v as "principal" | "investimentos")}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="principal">Carteira Principal</TabsTrigger>
-            <TabsTrigger value="investimentos">Investimentos</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {wallets.length > 0 && (
+          <Tabs value={activeWallet} onValueChange={setActiveWallet}>
+            <TabsList className="grid w-full max-w-full" style={{ gridTemplateColumns: `repeat(${wallets.length}, 1fr)` }}>
+              {wallets.map((wallet) => (
+                <TabsTrigger key={wallet.id} value={wallet.id}>
+                  {wallet.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
 
         {/* Cards de Métricas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -283,32 +325,24 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Gerenciamento */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CreditCardManager 
-            cards={creditCards}
-            onAddCard={handleAddCard}
-            onDeleteCard={handleDeleteCard}
-          />
-          <CategoryManager
+        {/* Quick Add Button */}
+        {wallets.length > 0 && (
+          <QuickAddButton
+            onAddTransaction={handleAddTransaction}
             categories={categories}
-            onDeleteCategory={handleDeleteCategory}
+            onAddCategory={handleAddCategory}
+            creditCards={creditCards}
+            wallets={wallets}
           />
-        </div>
-
-        {/* Formulário de Transação */}
-        <TransactionForm 
-          onAddTransaction={handleAddTransaction}
-          categories={categories}
-          onAddCategory={handleAddCategory}
-          creditCards={creditCards}
-        />
+        )}
 
         {/* Lista de Transações */}
-        <TransactionList 
-          transactions={transactions.filter((t) => t.wallet === activeWallet)}
-          onDeleteTransaction={handleDeleteTransaction}
-        />
+        {activeWallet && (
+          <TransactionList 
+            transactions={transactions.filter((t) => t.wallet === activeWallet)}
+            onDeleteTransaction={handleDeleteTransaction}
+          />
+        )}
       </div>
     </div>
   );

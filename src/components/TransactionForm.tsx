@@ -17,7 +17,9 @@ export interface Transaction {
   description: string;
   date: string;
   creditCard?: string;
-  wallet: "principal" | "investimentos";
+  wallet: string;
+  installments?: number;
+  dueDate?: string;
 }
 
 interface TransactionFormProps {
@@ -28,9 +30,10 @@ interface TransactionFormProps {
   };
   onAddCategory: (type: "receita" | "despesa", category: string) => void;
   creditCards: CreditCardType[];
+  wallets: Array<{ id: string; name: string }>;
 }
 
-export function TransactionForm({ onAddTransaction, categories, onAddCategory, creditCards }: TransactionFormProps) {
+export function TransactionForm({ onAddTransaction, categories, onAddCategory, creditCards, wallets }: TransactionFormProps) {
   const [type, setType] = useState<"receita" | "despesa">("despesa");
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -39,13 +42,15 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
   const [newCategory, setNewCategory] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [creditCard, setCreditCard] = useState<string>("");
-  const [wallet, setWallet] = useState<"principal" | "investimentos">("principal");
+  const [wallet, setWallet] = useState<string>("");
+  const [installments, setInstallments] = useState("");
+  const [dueDate, setDueDate] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!category || !amount || !description) {
-      toast.error("Preencha todos os campos");
+    if (!category || !amount || !description || !wallet) {
+      toast.error("Preencha todos os campos obrigatórios");
       return;
     }
 
@@ -57,6 +62,8 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
       date,
       creditCard: type === "despesa" && creditCard ? creditCard : undefined,
       wallet,
+      installments: installments ? parseInt(installments) : undefined,
+      dueDate: dueDate || undefined,
     });
 
     // Reset form
@@ -64,6 +71,8 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
     setDescription("");
     setCategory("");
     setCreditCard("");
+    setInstallments("");
+    setDueDate("");
     toast.success(`${type === "receita" ? "Receita" : "Despesa"} adicionada com sucesso!`);
   };
 
@@ -78,14 +87,7 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
   };
 
   return (
-    <Card className="border-border/50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Nova Transação
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -103,13 +105,16 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
 
             <div className="space-y-2">
               <Label>Carteira</Label>
-              <Select value={wallet} onValueChange={(v) => setWallet(v as "principal" | "investimentos")}>
+              <Select value={wallet} onValueChange={setWallet}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione uma carteira..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="principal">Principal</SelectItem>
-                  <SelectItem value="investimentos">Investimentos</SelectItem>
+                  {wallets.map((w) => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -158,12 +163,12 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
               </div>
             </div>
 
-            {type === "despesa" && creditCards.length > 0 && (
+            {type === "despesa" && (
               <div className="space-y-2">
                 <Label>Cartão de Crédito (opcional)</Label>
                 <Select value={creditCard} onValueChange={setCreditCard}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
+                    <SelectValue placeholder="Nenhum" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Nenhum</SelectItem>
@@ -175,6 +180,29 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
                   </SelectContent>
                 </Select>
               </div>
+            )}
+
+            {type === "despesa" && creditCard && (
+              <>
+                <div className="space-y-2">
+                  <Label>Número de Parcelas (opcional)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={installments}
+                    onChange={(e) => setInstallments(e.target.value)}
+                    placeholder="1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data de Vencimento (opcional)</Label>
+                  <Input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </div>
+              </>
             )}
 
             <div className="space-y-2">
@@ -208,7 +236,6 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
             Adicionar Transação
           </Button>
         </form>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

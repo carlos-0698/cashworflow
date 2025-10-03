@@ -76,6 +76,7 @@ export function TransactionList({ transactions, onDeleteTransaction }: Transacti
                 <TableHead>Descrição</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Tipo</TableHead>
+                <TableHead>Detalhes</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -83,7 +84,7 @@ export function TransactionList({ transactions, onDeleteTransaction }: Transacti
             <TableBody>
               {filteredTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     Nenhuma transação encontrada
                   </TableCell>
                 </TableRow>
@@ -106,6 +107,15 @@ export function TransactionList({ transactions, onDeleteTransaction }: Transacti
                           <ArrowDownCircle className="w-3 h-3 mr-1" />
                           Despesa
                         </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {transaction.creditCard && (
+                        <div>
+                          <div>💳 {transaction.creditCard}</div>
+                          {transaction.installments && <div>{transaction.installments}x</div>}
+                          {transaction.dueDate && <div>Venc: {format(new Date(transaction.dueDate), "dd/MM/yyyy", { locale: ptBR })}</div>}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="text-right font-semibold">

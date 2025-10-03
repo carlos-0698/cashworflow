@@ -22,14 +22,7 @@ export function CategoryManager({ categories, onDeleteCategory }: CategoryManage
   };
 
   return (
-    <Card className="border-border/50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FolderOpen className="w-5 h-5" />
-          Gerenciar Categorias
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "receita" | "despesa")}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="receita">Receitas</TabsTrigger>
@@ -72,7 +65,6 @@ export function CategoryManager({ categories, onDeleteCategory }: CategoryManage
             ))}
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

@@ -41,14 +41,7 @@ export function CreditCardManager({ cards, onAddCard, onDeleteCard }: CreditCard
   };
 
   return (
-    <Card className="border-border/50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CreditCard className="w-5 h-5" />
-          Gerenciar Cartões de Crédito
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -106,7 +99,6 @@ export function CreditCardManager({ cards, onAddCard, onDeleteCard }: CreditCard
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }
