@@ -14,14 +14,16 @@ interface QuickAddButtonProps {
   onAddCategory: (type: "receita" | "despesa", category: string) => void;
   creditCards: CreditCardType[];
   wallets: Array<{ id: string; name: string }>;
+  activeWallet?: string;
 }
 
-export function QuickAddButton({ 
-  onAddTransaction, 
-  categories, 
-  onAddCategory, 
+export function QuickAddButton({
+  onAddTransaction,
+  categories,
+  onAddCategory,
   creditCards,
-  wallets 
+  wallets,
+  activeWallet
 }: QuickAddButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -47,6 +49,7 @@ export function QuickAddButton({
           onAddCategory={onAddCategory}
           creditCards={creditCards}
           wallets={wallets}
+          activeWallet={activeWallet}
         />
       </DialogContent>
     </Dialog>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CreditCardType } from "./CreditCardManager";
 
@@ -13,13 +14,20 @@ export interface Transaction {
   id: string;
   type: "receita" | "despesa";
   category: string;
+  categoryId?: string;
   amount: number;
   description: string;
   date: string;
   creditCard?: string;
+  creditCardId?: string;
   wallet: string;
+  walletId?: string;
   installments?: number;
-  dueDate?: string;
+  currentInstallment?: number;
+  parentTransactionId?: string;
+  isRecurring?: boolean;
+  recurrenceFrequency?: "daily" | "weekly" | "monthly" | "yearly";
+  recurrenceEndDate?: string;
 }
 
 interface TransactionFormProps {
@@ -31,9 +39,10 @@ interface TransactionFormProps {
   onAddCategory: (type: "receita" | "despesa", category: string) => void;
   creditCards: CreditCardType[];
   wallets: Array<{ id: string; name: string }>;
+  activeWallet?: string;
 }
 
-export function TransactionForm({ onAddTransaction, categories, onAddCategory, creditCards, wallets }: TransactionFormProps) {
+export function TransactionForm({ onAddTransaction, categories, onAddCategory, creditCards, wallets, activeWallet }: TransactionFormProps) {
   const [type, setType] = useState<"receita" | "despesa">("despesa");
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -42,9 +51,17 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
   const [newCategory, setNewCategory] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [creditCard, setCreditCard] = useState<string>("");
-  const [wallet, setWallet] = useState<string>("");
+  const [wallet, setWallet] = useState<string>(activeWallet || "");
   const [installments, setInstallments] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<"daily" | "weekly" | "monthly" | "yearly">("monthly");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
+
+  useEffect(() => {
+    if (activeWallet && !wallet) {
+      setWallet(activeWallet);
+    }
+  }, [activeWallet]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +80,9 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
       creditCard: type === "despesa" && creditCard && creditCard !== "none" ? creditCard : undefined,
       wallet,
       installments: installments ? parseInt(installments) : undefined,
-      dueDate: dueDate || undefined,
+      isRecurring,
+      recurrenceFrequency: isRecurring ? recurrenceFrequency : undefined,
+      recurrenceEndDate: isRecurring && recurrenceEndDate ? recurrenceEndDate : undefined,
     });
 
     // Reset form
@@ -72,7 +91,8 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
     setCategory("");
     setCreditCard("");
     setInstallments("");
-    setDueDate("");
+    setIsRecurring(false);
+    setRecurrenceEndDate("");
     toast.success(`${type === "receita" ? "Receita" : "Despesa"} adicionada com sucesso!`);
   };
 
@@ -182,24 +202,54 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
               </div>
             )}
 
-            {type === "despesa" && creditCard && (
+            {type === "despesa" && creditCard && creditCard !== "none" && (
+              <div className="space-y-2">
+                <Label>Número de Parcelas</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={installments}
+                  onChange={(e) => setInstallments(e.target.value)}
+                  placeholder="1"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="recurring"
+                  checked={isRecurring}
+                  onCheckedChange={setIsRecurring}
+                />
+                <Label htmlFor="recurring" className="cursor-pointer">
+                  Despesa Fixa (Recorrente)
+                </Label>
+              </div>
+            </div>
+
+            {isRecurring && (
               <>
                 <div className="space-y-2">
-                  <Label>Número de Parcelas (opcional)</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={installments}
-                    onChange={(e) => setInstallments(e.target.value)}
-                    placeholder="1"
-                  />
+                  <Label>Frequência</Label>
+                  <Select value={recurrenceFrequency} onValueChange={(v) => setRecurrenceFrequency(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Diária</SelectItem>
+                      <SelectItem value="weekly">Semanal</SelectItem>
+                      <SelectItem value="monthly">Mensal</SelectItem>
+                      <SelectItem value="yearly">Anual</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Data de Vencimento (opcional)</Label>
+                  <Label>Repetir até (opcional)</Label>
                   <Input
                     type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
+                    value={recurrenceEndDate}
+                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
                   />
                 </div>
               </>

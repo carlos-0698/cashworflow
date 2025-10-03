@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MetricCard } from "@/components/MetricCard";
 import { Transaction } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
@@ -7,6 +7,8 @@ import { WalletManager, WalletType } from "@/components/WalletManager";
 import { QuickAddButton } from "@/components/QuickAddButton";
 import { CardManager } from "@/components/CardManager";
 import { CategoryManagerButton } from "@/components/CategoryManagerButton";
+import { MonthNavigator } from "@/components/MonthNavigator";
+import { calculateCreditCardExpensesForMonth } from "@/lib/installmentCalculator";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -18,7 +20,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const Index = () => {
@@ -26,17 +28,73 @@ const Index = () => {
   const [creditCards, setCreditCards] = useState<CreditCardType[]>([]);
   const [wallets, setWallets] = useState<WalletType[]>([]);
   const [activeWallet, setActiveWallet] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [categories, setCategories] = useState({
     receita: ["Salário", "Freelance", "Investimentos", "Outros"],
     despesa: ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Educação", "Outros"],
   });
 
   const handleAddTransaction = (transaction: Omit<Transaction, "id">) => {
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: Date.now().toString(),
-    };
-    setTransactions([newTransaction, ...transactions]);
+    if (transaction.isRecurring && transaction.recurrenceFrequency) {
+      const futureDate = addMonths(new Date(), 12);
+      const recurringDates = [];
+      let currentDate = parseISO(transaction.date);
+      const endDate = transaction.recurrenceEndDate
+        ? parseISO(transaction.recurrenceEndDate)
+        : futureDate;
+
+      while (currentDate <= endDate && currentDate <= futureDate) {
+        const newTransaction: Transaction = {
+          ...transaction,
+          id: `${Date.now()}-${currentDate.getTime()}`,
+          date: format(currentDate, "yyyy-MM-dd"),
+        };
+        recurringDates.push(newTransaction);
+
+        switch (transaction.recurrenceFrequency) {
+          case "daily":
+            currentDate = addMonths(currentDate, 0);
+            currentDate.setDate(currentDate.getDate() + 1);
+            break;
+          case "weekly":
+            currentDate = addMonths(currentDate, 0);
+            currentDate.setDate(currentDate.getDate() + 7);
+            break;
+          case "monthly":
+            currentDate = addMonths(currentDate, 1);
+            break;
+          case "yearly":
+            currentDate = addMonths(currentDate, 12);
+            break;
+        }
+      }
+
+      setTransactions([...recurringDates, ...transactions]);
+    } else if (transaction.creditCard && transaction.installments && transaction.installments > 1) {
+      const installmentTransactions: Transaction[] = [];
+      const installmentAmount = transaction.amount / transaction.installments;
+      const baseDate = parseISO(transaction.date);
+
+      for (let i = 0; i < transaction.installments; i++) {
+        const installmentDate = addMonths(baseDate, i);
+        const newTransaction: Transaction = {
+          ...transaction,
+          id: `${Date.now()}-${i}`,
+          amount: installmentAmount,
+          currentInstallment: i + 1,
+          date: format(installmentDate, "yyyy-MM-dd"),
+        };
+        installmentTransactions.push(newTransaction);
+      }
+
+      setTransactions([...installmentTransactions, ...transactions]);
+    } else {
+      const newTransaction: Transaction = {
+        ...transaction,
+        id: Date.now().toString(),
+      };
+      setTransactions([newTransaction, ...transactions]);
+    }
   };
 
   const handleDeleteTransaction = (id: string) => {
@@ -89,10 +147,19 @@ const Index = () => {
     }
   };
 
-  // Cálculos
   const metrics = useMemo(() => {
-    const walletTransactions = transactions.filter((t) => t.wallet === activeWallet);
-    
+    const monthStart = startOfMonth(selectedMonth);
+    const monthEnd = endOfMonth(selectedMonth);
+
+    const walletTransactions = transactions.filter((t) => {
+      const transactionDate = parseISO(t.date);
+      return (
+        t.wallet === activeWallet &&
+        transactionDate >= monthStart &&
+        transactionDate <= monthEnd
+      );
+    });
+
     const totalReceitas = walletTransactions
       .filter((t) => t.type === "receita")
       .reduce((sum, t) => sum + t.amount, 0);
@@ -110,7 +177,7 @@ const Index = () => {
       saldo,
       percentualEconomia,
     };
-  }, [transactions, activeWallet]);
+  }, [transactions, activeWallet, selectedMonth]);
 
   // Dados mensais para gráficos
   const monthlyData = useMemo(() => {
@@ -328,6 +395,12 @@ const Index = () => {
           </Card>
         </div>
 
+        {/* Month Navigator */}
+        <MonthNavigator
+          currentDate={selectedMonth}
+          onMonthChange={setSelectedMonth}
+        />
+
         {/* Quick Add Button */}
         {wallets.length > 0 && (
           <QuickAddButton
@@ -336,13 +409,23 @@ const Index = () => {
             onAddCategory={handleAddCategory}
             creditCards={creditCards}
             wallets={wallets}
+            activeWallet={activeWallet}
           />
         )}
 
         {/* Lista de Transações */}
         {activeWallet && (
-          <TransactionList 
-            transactions={transactions.filter((t) => t.wallet === activeWallet)}
+          <TransactionList
+            transactions={transactions.filter((t) => {
+              const transactionDate = parseISO(t.date);
+              const monthStart = startOfMonth(selectedMonth);
+              const monthEnd = endOfMonth(selectedMonth);
+              return (
+                t.wallet === activeWallet &&
+                transactionDate >= monthStart &&
+                transactionDate <= monthEnd
+              );
+            })}
             onDeleteTransaction={handleDeleteTransaction}
           />
         )}

@@ -113,8 +113,14 @@ export function TransactionList({ transactions, onDeleteTransaction }: Transacti
                       {transaction.creditCard && (
                         <div>
                           <div>💳 {transaction.creditCard}</div>
-                          {transaction.installments && <div>{transaction.installments}x</div>}
-                          {transaction.dueDate && <div>Venc: {format(new Date(transaction.dueDate), "dd/MM/yyyy", { locale: ptBR })}</div>}
+                          {transaction.installments && transaction.installments > 1 && (
+                            <div>Parcela {transaction.currentInstallment}/{transaction.installments}</div>
+                          )}
+                        </div>
+                      )}
+                      {transaction.isRecurring && (
+                        <div className="text-xs text-blue-400">
+                          🔄 Recorrente
                         </div>
                       )}
                     </TableCell>
