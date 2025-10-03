@@ -60,7 +60,7 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
       amount: parseFloat(amount),
       description,
       date,
-      creditCard: type === "despesa" && creditCard ? creditCard : undefined,
+      creditCard: type === "despesa" && creditCard && creditCard !== "none" ? creditCard : undefined,
       wallet,
       installments: installments ? parseInt(installments) : undefined,
       dueDate: dueDate || undefined,
@@ -163,7 +163,7 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
               </div>
             </div>
 
-            {type === "despesa" && (
+            {type === "despesa" && creditCards.length > 0 && (
               <div className="space-y-2">
                 <Label>Cartão de Crédito (opcional)</Label>
                 <Select value={creditCard} onValueChange={setCreditCard}>
@@ -171,7 +171,7 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
                     <SelectValue placeholder="Nenhum" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {creditCards.map((card) => (
                       <SelectItem key={card.id} value={card.name}>
                         {card.name}

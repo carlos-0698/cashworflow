@@ -5,7 +5,8 @@ import { TransactionList } from "@/components/TransactionList";
 import { CreditCardType } from "@/components/CreditCardManager";
 import { WalletManager, WalletType } from "@/components/WalletManager";
 import { QuickAddButton } from "@/components/QuickAddButton";
-import { ManagementMenu } from "@/components/ManagementMenu";
+import { CardManager } from "@/components/CardManager";
+import { CategoryManagerButton } from "@/components/CategoryManagerButton";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -180,10 +181,12 @@ const Index = () => {
             onAddWallet={handleAddWallet}
             onDeleteWallet={handleDeleteWallet}
           />
-          <ManagementMenu
+          <CardManager
             creditCards={creditCards}
             onAddCard={handleAddCard}
             onDeleteCard={handleDeleteCard}
+          />
+          <CategoryManagerButton
             categories={categories}
             onDeleteCategory={handleDeleteCategory}
           />
