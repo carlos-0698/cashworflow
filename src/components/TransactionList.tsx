@@ -58,9 +58,9 @@ export function TransactionList({ transactions, onDeleteTransaction, currentMont
             <Button variant="outline" size="icon" onClick={handlePreviousMonth}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-sm font-medium min-w-[120px] text-center">
-              {isValidMonth ? format(currentMonth, "MMMM yyyy", { locale: ptBR }) : "Selecione uma data"}
-            </span>
+            <Button variant="outline" size="sm" onClick={() => onMonthChange(new Date())}>
+              Hoje
+            </Button>
             <Button variant="outline" size="icon" onClick={handleNextMonth}>
               <ChevronRight className="w-4 h-4" />
             </Button>

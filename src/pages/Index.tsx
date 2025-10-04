@@ -217,9 +217,12 @@ const Index = () => {
         categories[t.category] = (categories[t.category] || 0) + t.amount;
       });
 
+    const total = Object.values(categories).reduce((sum, value) => sum + value, 0);
+
     return Object.entries(categories).map(([name, value]) => ({
       name,
       value,
+      percentage: total > 0 ? (value / total) * 100 : 0,
     }));
   }, [transactions, activeWallet]);
 
@@ -381,7 +384,7 @@ const Index = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ percentage }) => `${percentage.toFixed(1)}%`}
                     outerRadius={100}
                     fill="#8884d8"
                     dataKey="value"
@@ -391,12 +394,14 @@ const Index = () => {
                     ))}
                   </Pie>
                   <Tooltip 
+                    formatter={(value: number) => `R$ ${value.toFixed(2)}`}
                     contentStyle={{ 
                       backgroundColor: "hsl(260, 50%, 12%)", 
                       border: "1px solid hsl(260, 30%, 25%)",
                       borderRadius: "0.5rem"
                     }} 
                   />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
