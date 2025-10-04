@@ -24,6 +24,7 @@ const Index = () => {
   const [activeWallet, setActiveWallet] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [chartMonth, setChartMonth] = useState<Date>(new Date());
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
   const [categories, setCategories] = useState({
     receita: ["Salário", "Freelance", "Investimentos", "Outros"],
     despesa: ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Educação", "Outros"],
@@ -94,6 +95,20 @@ const Index = () => {
 
   const handleDeleteTransaction = (id: string) => {
     setTransactions(transactions.filter((t) => t.id !== id));
+  };
+
+  const handleEditTransaction = (id: string, updatedTransaction: Omit<Transaction, "id">) => {
+    setTransactions(transactions.map((t) => 
+      t.id === id ? { ...updatedTransaction, id } : t
+    ));
+  };
+
+  const handleOpenEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingTransaction(undefined);
   };
 
   const handleAddCategory = (type: "receita" | "despesa", category: string) => {
@@ -422,11 +437,14 @@ const Index = () => {
         {wallets.length > 0 && (
           <QuickAddButton
             onAddTransaction={handleAddTransaction}
+            onEditTransaction={handleEditTransaction}
             categories={categories}
             onAddCategory={handleAddCategory}
             creditCards={creditCards}
             wallets={wallets}
             activeWallet={activeWallet}
+            editingTransaction={editingTransaction}
+            onCloseEdit={handleCloseEdit}
           />
         )}
 
@@ -444,6 +462,7 @@ const Index = () => {
               );
             })}
             onDeleteTransaction={handleDeleteTransaction}
+            onEditTransaction={handleOpenEditTransaction}
             currentMonth={selectedMonth}
             onMonthChange={setSelectedMonth}
           />

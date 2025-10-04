@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Transaction } from "./TransactionForm";
 import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Filter, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Filter, Trash2, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -13,11 +13,12 @@ import { toast } from "sonner";
 interface TransactionListProps {
   transactions: Transaction[];
   onDeleteTransaction: (id: string) => void;
+  onEditTransaction: (transaction: Transaction) => void;
   currentMonth: Date;
   onMonthChange: (date: Date) => void;
 }
 
-export function TransactionList({ transactions, onDeleteTransaction, currentMonth, onMonthChange }: TransactionListProps) {
+export function TransactionList({ transactions, onDeleteTransaction, onEditTransaction, currentMonth, onMonthChange }: TransactionListProps) {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
 
@@ -164,14 +165,24 @@ export function TransactionList({ transactions, onDeleteTransaction, currentMont
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(transaction.id)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEditTransaction(transaction)}
+                          className="text-primary hover:text-primary hover:bg-primary/10"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(transaction.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

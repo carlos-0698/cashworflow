@@ -32,6 +32,7 @@ export interface Transaction {
 
 interface TransactionFormProps {
   onAddTransaction: (transaction: Omit<Transaction, "id">) => void;
+  onEditTransaction?: (id: string, transaction: Omit<Transaction, "id">) => void;
   categories: {
     receita: string[];
     despesa: string[];
@@ -40,9 +41,10 @@ interface TransactionFormProps {
   creditCards: CreditCardType[];
   wallets: Array<{ id: string; name: string }>;
   activeWallet?: string;
+  editingTransaction?: Transaction;
 }
 
-export function TransactionForm({ onAddTransaction, categories, onAddCategory, creditCards, wallets, activeWallet }: TransactionFormProps) {
+export function TransactionForm({ onAddTransaction, onEditTransaction, categories, onAddCategory, creditCards, wallets, activeWallet, editingTransaction }: TransactionFormProps) {
   const [type, setType] = useState<"receita" | "despesa">("despesa");
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -63,6 +65,22 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
     }
   }, [activeWallet]);
 
+  useEffect(() => {
+    if (editingTransaction) {
+      setType(editingTransaction.type);
+      setCategory(editingTransaction.category);
+      setAmount(editingTransaction.amount.toString());
+      setDescription(editingTransaction.description);
+      setDate(editingTransaction.date);
+      setCreditCard(editingTransaction.creditCard || "none");
+      setWallet(editingTransaction.wallet);
+      setInstallments(editingTransaction.installments?.toString() || "");
+      setIsRecurring(editingTransaction.isRecurring || false);
+      setRecurrenceFrequency(editingTransaction.recurrenceFrequency || "monthly");
+      setRecurrenceEndDate(editingTransaction.recurrenceEndDate || "");
+    }
+  }, [editingTransaction]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -80,7 +98,7 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
       }
     }
 
-    onAddTransaction({
+    const transactionData = {
       type,
       category,
       amount: parseFloat(amount),
@@ -92,7 +110,15 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
       isRecurring,
       recurrenceFrequency: isRecurring ? recurrenceFrequency : undefined,
       recurrenceEndDate: isRecurring && recurrenceEndDate ? recurrenceEndDate : undefined,
-    });
+    };
+
+    if (editingTransaction && onEditTransaction) {
+      onEditTransaction(editingTransaction.id, transactionData);
+      toast.success(`Transação atualizada com sucesso!`);
+    } else {
+      onAddTransaction(transactionData);
+      toast.success(`${type === "receita" ? "Receita" : "Despesa"} adicionada com sucesso!`);
+    }
 
     // Reset form
     setAmount("");
@@ -102,7 +128,6 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
     setInstallments("");
     setIsRecurring(false);
     setRecurrenceEndDate("");
-    toast.success(`${type === "receita" ? "Receita" : "Despesa"} adicionada com sucesso!`);
   };
 
   const handleAddNewCategory = () => {
@@ -292,7 +317,7 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
 
           <Button type="submit" className="w-full">
             <Plus className="w-4 h-4 mr-2" />
-            Adicionar Transação
+            {editingTransaction ? "Atualizar Transação" : "Adicionar Transação"}
           </Button>
         </form>
     </div>
