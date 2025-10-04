@@ -50,7 +50,7 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [newCategory, setNewCategory] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [creditCard, setCreditCard] = useState<string>("");
+  const [creditCard, setCreditCard] = useState<string>("none");
   const [wallet, setWallet] = useState<string>(activeWallet || "");
   const [installments, setInstallments] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
@@ -71,6 +71,15 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
       return;
     }
 
+    // Validar limite do cartão de crédito
+    if (type === "despesa" && creditCard && creditCard !== "none") {
+      const selectedCard = creditCards.find(card => card.name === creditCard);
+      if (selectedCard && parseFloat(amount) > selectedCard.limit) {
+        toast.error(`O valor excede o limite do cartão ${selectedCard.name} (R$ ${selectedCard.limit.toFixed(2)})`);
+        return;
+      }
+    }
+
     onAddTransaction({
       type,
       category,
@@ -89,7 +98,7 @@ export function TransactionForm({ onAddTransaction, categories, onAddCategory, c
     setAmount("");
     setDescription("");
     setCategory("");
-    setCreditCard("");
+    setCreditCard("none");
     setInstallments("");
     setIsRecurring(false);
     setRecurrenceEndDate("");

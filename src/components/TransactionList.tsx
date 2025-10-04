@@ -3,9 +3,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Transaction } from "./TransactionForm";
-import { format } from "date-fns";
+import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Filter, Trash2 } from "lucide-react";
+import { CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Filter, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -13,58 +13,76 @@ import { toast } from "sonner";
 interface TransactionListProps {
   transactions: Transaction[];
   onDeleteTransaction: (id: string) => void;
+  currentMonth: Date;
+  onMonthChange: (date: Date) => void;
 }
 
-export function TransactionList({ transactions, onDeleteTransaction }: TransactionListProps) {
+export function TransactionList({ transactions, onDeleteTransaction, currentMonth, onMonthChange }: TransactionListProps) {
   const [filterType, setFilterType] = useState<string>("all");
-  const [filterMonth, setFilterMonth] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
 
   const filteredTransactions = transactions.filter((t) => {
     const typeMatch = filterType === "all" || t.type === filterType;
-    const monthMatch = filterMonth === "all" || t.date.substring(0, 7) === filterMonth;
-    return typeMatch && monthMatch;
+    const categoryMatch = filterCategory === "all" || t.category === filterCategory;
+    return typeMatch && categoryMatch;
   });
 
-  const months = Array.from(new Set(transactions.map((t) => t.date.substring(0, 7)))).sort().reverse();
+  const categories = Array.from(new Set(transactions.map((t) => t.category)));
 
   const handleDelete = (id: string) => {
     onDeleteTransaction(id);
     toast.success("Transação excluída com sucesso!");
   };
 
+  const handlePreviousMonth = () => {
+    onMonthChange(subMonths(currentMonth, 1));
+  };
+
+  const handleNextMonth = () => {
+    onMonthChange(addMonths(currentMonth, 1));
+  };
+
   return (
     <Card className="border-border/50">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Transações
-          </CardTitle>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full sm:w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="receita">Receitas</SelectItem>
-                <SelectItem value="despesa">Despesas</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterMonth} onValueChange={setFilterMonth}>
-              <SelectTrigger className="w-full sm:w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos meses</SelectItem>
-                {months.map((month) => (
-                  <SelectItem key={month} value={month}>
-                    {format(new Date(month + "-01"), "MMM/yyyy", { locale: ptBR })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex items-center justify-between mb-4">
+          <CardTitle>Transações</CardTitle>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={handlePreviousMonth}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-sm font-medium min-w-[120px] text-center">
+              {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+            </span>
+            <Button variant="outline" size="icon" onClick={handleNextMonth}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
+        </div>
+        <div className="flex gap-2">
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="receita">Receitas</SelectItem>
+              <SelectItem value="despesa">Despesas</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas categorias</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>

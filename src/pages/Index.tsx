@@ -7,9 +7,10 @@ import { WalletManager, WalletType } from "@/components/WalletManager";
 import { QuickAddButton } from "@/components/QuickAddButton";
 import { CardManager } from "@/components/CardManager";
 import { CategoryManagerButton } from "@/components/CategoryManagerButton";
-import { MonthNavigator } from "@/components/MonthNavigator";
+
 import { calculateCreditCardExpensesForMonth } from "@/lib/installmentCalculator";
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, ChartBar as BarChart3, ChartPie as PieChartIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, ChartBar as BarChart3, ChartPie as PieChartIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -22,6 +23,7 @@ const Index = () => {
   const [wallets, setWallets] = useState<WalletType[]>([]);
   const [activeWallet, setActiveWallet] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [chartMonth, setChartMonth] = useState<Date>(new Date());
   const [categories, setCategories] = useState({
     receita: ["Salário", "Freelance", "Investimentos", "Outros"],
     despesa: ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Educação", "Outros"],
@@ -175,8 +177,8 @@ const Index = () => {
   // Dados mensais para gráficos
   const monthlyData = useMemo(() => {
     const months = eachMonthOfInterval({
-      start: subMonths(new Date(), 5),
-      end: new Date(),
+      start: subMonths(chartMonth, 5),
+      end: chartMonth,
     });
 
     return months.map((month) => {
@@ -203,7 +205,7 @@ const Index = () => {
         saldo: receitas - despesas,
       };
     });
-  }, [transactions, activeWallet]);
+  }, [transactions, activeWallet, chartMonth]);
 
   // Dados por categoria
   const categoryData = useMemo(() => {
@@ -301,10 +303,23 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="border-border/50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Evolução Mensal
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Evolução Mensal
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" onClick={() => setChartMonth(subMonths(chartMonth, 1))}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm font-medium min-w-[100px] text-center">
+                    {format(chartMonth, "MMM yyyy", { locale: ptBR })}
+                  </span>
+                  <Button variant="outline" size="icon" onClick={() => setChartMonth(addMonths(chartMonth, 1))}>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -388,12 +403,6 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Month Navigator */}
-        <MonthNavigator
-          currentDate={selectedMonth}
-          onMonthChange={setSelectedMonth}
-        />
-
         {/* Quick Add Button */}
         {wallets.length > 0 && (
           <QuickAddButton
@@ -420,6 +429,8 @@ const Index = () => {
               );
             })}
             onDeleteTransaction={handleDeleteTransaction}
+            currentMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
           />
         )}
       </div>
