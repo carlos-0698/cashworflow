@@ -209,10 +209,20 @@ const Index = () => {
 
   // Dados por categoria
   const categoryData = useMemo(() => {
+    const monthStart = startOfMonth(chartMonth);
+    const monthEnd = endOfMonth(chartMonth);
     const categories: Record<string, number> = {};
     
     transactions
-      .filter((t) => t.type === "despesa" && t.wallet === activeWallet)
+      .filter((t) => {
+        const transactionDate = parseISO(t.date);
+        return (
+          t.type === "despesa" && 
+          t.wallet === activeWallet &&
+          transactionDate >= monthStart &&
+          transactionDate <= monthEnd
+        );
+      })
       .forEach((t) => {
         categories[t.category] = (categories[t.category] || 0) + t.amount;
       });
@@ -224,7 +234,7 @@ const Index = () => {
       value,
       percentage: total > 0 ? (value / total) * 100 : 0,
     }));
-  }, [transactions, activeWallet]);
+  }, [transactions, activeWallet, chartMonth]);
 
   const COLORS = ["hsl(210, 100%, 50%)", "hsl(160, 80%, 45%)", "hsl(320, 100%, 60%)", "hsl(280, 80%, 65%)", "hsl(40, 100%, 55%)"];
 
