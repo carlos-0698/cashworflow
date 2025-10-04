@@ -35,12 +35,19 @@ export function TransactionList({ transactions, onDeleteTransaction, currentMont
   };
 
   const handlePreviousMonth = () => {
-    onMonthChange(subMonths(currentMonth, 1));
+    if (currentMonth && currentMonth instanceof Date && !isNaN(currentMonth.getTime())) {
+      onMonthChange(subMonths(currentMonth, 1));
+    }
   };
 
   const handleNextMonth = () => {
-    onMonthChange(addMonths(currentMonth, 1));
+    if (currentMonth && currentMonth instanceof Date && !isNaN(currentMonth.getTime())) {
+      onMonthChange(addMonths(currentMonth, 1));
+    }
   };
+
+  // Validar currentMonth
+  const isValidMonth = currentMonth && currentMonth instanceof Date && !isNaN(currentMonth.getTime());
 
   return (
     <Card className="border-border/50">
@@ -52,7 +59,7 @@ export function TransactionList({ transactions, onDeleteTransaction, currentMont
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <span className="text-sm font-medium min-w-[120px] text-center">
-              {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+              {isValidMonth ? format(currentMonth, "MMMM yyyy", { locale: ptBR }) : "Selecione uma data"}
             </span>
             <Button variant="outline" size="icon" onClick={handleNextMonth}>
               <ChevronRight className="w-4 h-4" />
@@ -110,7 +117,15 @@ export function TransactionList({ transactions, onDeleteTransaction, currentMont
                 filteredTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell className="font-medium">
-                      {format(new Date(transaction.date), "dd/MM/yyyy")}
+                      {(() => {
+                        try {
+                          const date = new Date(transaction.date);
+                          if (isNaN(date.getTime())) return transaction.date;
+                          return format(date, "dd/MM/yyyy");
+                        } catch {
+                          return transaction.date;
+                        }
+                      })()}
                     </TableCell>
                     <TableCell>{transaction.description}</TableCell>
                     <TableCell>{transaction.category}</TableCell>
