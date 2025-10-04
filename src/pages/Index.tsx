@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { MetricCard } from "@/components/MetricCard";
+import { MetricAnalysis, MetricType } from "@/components/MetricAnalysis";
 import { Transaction } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
 import { CreditCardType } from "@/components/CreditCardManager";
@@ -29,6 +30,8 @@ const Index = () => {
     receita: ["Salário", "Freelance", "Investimentos", "Outros"],
     despesa: ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Educação", "Outros"],
   });
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null);
 
   const handleAddTransaction = (transaction: Omit<Transaction, "id">) => {
     if (transaction.isRecurring && transaction.recurrenceFrequency) {
@@ -253,6 +256,192 @@ const Index = () => {
 
   const COLORS = ["hsl(210, 100%, 50%)", "hsl(160, 80%, 45%)", "hsl(320, 100%, 60%)", "hsl(280, 80%, 65%)", "hsl(40, 100%, 55%)"];
 
+  const historicalBalanceData = useMemo(() => {
+    const months = eachMonthOfInterval({
+      start: subMonths(new Date(), 5),
+      end: new Date(),
+    });
+
+    return months.map((month) => {
+      const start = startOfMonth(month);
+      const end = endOfMonth(month);
+
+      const monthTransactions = transactions.filter((t) => {
+        const date = new Date(t.date);
+        return date >= start && date <= end && t.wallet === activeWallet;
+      });
+
+      const receitas = monthTransactions
+        .filter((t) => t.type === "receita")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const despesas = monthTransactions
+        .filter((t) => t.type === "despesa")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      return {
+        month: format(month, "MMM", { locale: ptBR }),
+        value: receitas - despesas,
+      };
+    });
+  }, [transactions, activeWallet]);
+
+  const historicalRevenueData = useMemo(() => {
+    const months = eachMonthOfInterval({
+      start: subMonths(new Date(), 5),
+      end: new Date(),
+    });
+
+    return months.map((month) => {
+      const start = startOfMonth(month);
+      const end = endOfMonth(month);
+
+      const monthTransactions = transactions.filter((t) => {
+        const date = new Date(t.date);
+        return date >= start && date <= end && t.wallet === activeWallet;
+      });
+
+      const receitas = monthTransactions
+        .filter((t) => t.type === "receita")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      return {
+        month: format(month, "MMM", { locale: ptBR }),
+        value: receitas,
+      };
+    });
+  }, [transactions, activeWallet]);
+
+  const historicalExpenseData = useMemo(() => {
+    const months = eachMonthOfInterval({
+      start: subMonths(new Date(), 5),
+      end: new Date(),
+    });
+
+    return months.map((month) => {
+      const start = startOfMonth(month);
+      const end = endOfMonth(month);
+
+      const monthTransactions = transactions.filter((t) => {
+        const date = new Date(t.date);
+        return date >= start && date <= end && t.wallet === activeWallet;
+      });
+
+      const despesas = monthTransactions
+        .filter((t) => t.type === "despesa")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      return {
+        month: format(month, "MMM", { locale: ptBR }),
+        value: despesas,
+      };
+    });
+  }, [transactions, activeWallet]);
+
+  const historicalSavingsData = useMemo(() => {
+    const months = eachMonthOfInterval({
+      start: subMonths(new Date(), 5),
+      end: new Date(),
+    });
+
+    return months.map((month) => {
+      const start = startOfMonth(month);
+      const end = endOfMonth(month);
+
+      const monthTransactions = transactions.filter((t) => {
+        const date = new Date(t.date);
+        return date >= start && date <= end && t.wallet === activeWallet;
+      });
+
+      const receitas = monthTransactions
+        .filter((t) => t.type === "receita")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const despesas = monthTransactions
+        .filter((t) => t.type === "despesa")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const saldo = receitas - despesas;
+      const percentage = receitas > 0 ? (saldo / receitas) * 100 : 0;
+
+      return {
+        month: format(month, "MMM", { locale: ptBR }),
+        value: percentage,
+      };
+    });
+  }, [transactions, activeWallet]);
+
+  const getInsights = (type: MetricType) => {
+    let historicalData: any[] = [];
+    let currentValue = 0;
+
+    switch (type) {
+      case "balance":
+        historicalData = historicalBalanceData;
+        currentValue = metrics.saldo;
+        break;
+      case "revenue":
+        historicalData = historicalRevenueData;
+        currentValue = metrics.totalReceitas;
+        break;
+      case "expense":
+        historicalData = historicalExpenseData;
+        currentValue = metrics.totalDespesas;
+        break;
+      case "savings":
+        historicalData = historicalSavingsData;
+        currentValue = metrics.percentualEconomia;
+        break;
+    }
+
+    const previousValue = historicalData[historicalData.length - 2]?.value || 0;
+    const percentageChange = previousValue !== 0
+      ? ((currentValue - previousValue) / Math.abs(previousValue)) * 100
+      : 0;
+
+    const trend = percentageChange > 5 ? "up" : percentageChange < -5 ? "down" : "stable";
+
+    const highlights: string[] = [];
+
+    if (type === "balance") {
+      if (currentValue > 0) highlights.push("Seu saldo está positivo este mês");
+      else highlights.push("Atenção: seu saldo está negativo");
+
+      const maxBalance = Math.max(...historicalData.map(d => d.value));
+      if (currentValue === maxBalance) highlights.push("Este é seu melhor saldo nos últimos meses!");
+    }
+
+    if (type === "revenue") {
+      const avgRevenue = historicalData.reduce((sum, d) => sum + d.value, 0) / historicalData.length;
+      if (currentValue > avgRevenue) highlights.push("Suas receitas estão acima da média");
+      else highlights.push("Suas receitas estão abaixo da média histórica");
+    }
+
+    if (type === "expense") {
+      const avgExpense = historicalData.reduce((sum, d) => sum + d.value, 0) / historicalData.length;
+      if (currentValue > avgExpense) highlights.push("Suas despesas estão acima da média - considere revisar");
+      else highlights.push("Suas despesas estão controladas");
+    }
+
+    if (type === "savings") {
+      if (currentValue >= 20) highlights.push("Excelente! Você está economizando 20% ou mais");
+      else if (currentValue >= 10) highlights.push("Boa taxa de economia, mas pode melhorar");
+      else highlights.push("Taxa de economia baixa - priorize aumentá-la");
+    }
+
+    return {
+      trend,
+      percentageChange,
+      comparison: "vs mês anterior",
+      highlights,
+    };
+  };
+
+  const openMetricAnalysis = (type: MetricType) => {
+    setSelectedMetric(type);
+    setAnalysisOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -303,6 +492,7 @@ const Index = () => {
             icon={Wallet}
             variant="profit"
             subtitle={metrics.saldo >= 0 ? "Situação positiva" : "Atenção ao saldo"}
+            onClick={() => openMetricAnalysis("balance")}
           />
           <MetricCard
             title="Receitas Totais"
@@ -310,6 +500,7 @@ const Index = () => {
             icon={TrendingUp}
             variant="revenue"
             subtitle="Total de entradas"
+            onClick={() => openMetricAnalysis("revenue")}
           />
           <MetricCard
             title="Despesas Totais"
@@ -317,6 +508,7 @@ const Index = () => {
             icon={TrendingDown}
             variant="expense"
             subtitle="Total de saídas"
+            onClick={() => openMetricAnalysis("expense")}
           />
           <MetricCard
             title="% de Economia"
@@ -324,8 +516,31 @@ const Index = () => {
             icon={PiggyBank}
             variant="savings"
             subtitle={`R$ ${metrics.saldo.toFixed(2)} poupados`}
+            onClick={() => openMetricAnalysis("savings")}
           />
         </div>
+
+        {selectedMetric && (
+          <MetricAnalysis
+            open={analysisOpen}
+            onClose={() => setAnalysisOpen(false)}
+            metricType={selectedMetric}
+            currentValue={
+              selectedMetric === "balance" ? metrics.saldo :
+              selectedMetric === "revenue" ? metrics.totalReceitas :
+              selectedMetric === "expense" ? metrics.totalDespesas :
+              metrics.percentualEconomia
+            }
+            historicalData={
+              selectedMetric === "balance" ? historicalBalanceData :
+              selectedMetric === "revenue" ? historicalRevenueData :
+              selectedMetric === "expense" ? historicalExpenseData :
+              historicalSavingsData
+            }
+            categoryData={selectedMetric === "expense" ? categoryData : undefined}
+            insights={getInsights(selectedMetric)}
+          />
+        )}
 
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

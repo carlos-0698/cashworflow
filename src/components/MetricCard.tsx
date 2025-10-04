@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { LucideIcon } from "lucide-react";
+import { Video as LucideIcon } from "lucide-react";
 import { ReactNode } from "react";
 
 interface MetricCardProps {
@@ -9,6 +9,7 @@ interface MetricCardProps {
   variant: "revenue" | "expense" | "profit" | "savings";
   subtitle?: string;
   chart?: ReactNode;
+  onClick?: () => void;
 }
 
 const variantStyles = {
@@ -18,9 +19,12 @@ const variantStyles = {
   savings: "bg-gradient-to-br from-[hsl(280,80%,65%)] to-[hsl(290,75%,60%)]",
 };
 
-export function MetricCard({ title, value, icon: Icon, variant, subtitle, chart }: MetricCardProps) {
+export function MetricCard({ title, value, icon: Icon, variant, subtitle, chart, onClick }: MetricCardProps) {
   return (
-    <Card className={`${variantStyles[variant]} border-0 overflow-hidden relative`}>
+    <Card
+      className={`${variantStyles[variant]} border-0 overflow-hidden relative transition-all hover:scale-105 ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
+    >
       <div className="p-6 text-white relative z-10">
         <div className="flex items-start justify-between mb-4">
           <div>
