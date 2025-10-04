@@ -403,30 +403,67 @@ const Index = () => {
 
     const highlights: string[] = [];
 
+    const avgLast6Months = historicalData.length > 0
+      ? historicalData.reduce((sum, d) => sum + d.value, 0) / historicalData.length
+      : 0;
+
     if (type === "balance") {
       if (currentValue > 0) highlights.push("Seu saldo está positivo este mês");
       else highlights.push("Atenção: seu saldo está negativo");
 
       const maxBalance = Math.max(...historicalData.map(d => d.value));
-      if (currentValue === maxBalance) highlights.push("Este é seu melhor saldo nos últimos meses!");
+      if (currentValue === maxBalance && historicalData.length > 1) {
+        highlights.push("Este é seu melhor saldo nos últimos meses!");
+      }
+
+      if (historicalData.length >= 3) {
+        const comparisonText = currentValue > avgLast6Months
+          ? `Saldo ${((currentValue / avgLast6Months - 1) * 100).toFixed(0)}% acima da média dos últimos 6 meses`
+          : `Saldo ${((1 - currentValue / avgLast6Months) * 100).toFixed(0)}% abaixo da média`;
+        highlights.push(comparisonText);
+      }
     }
 
     if (type === "revenue") {
-      const avgRevenue = historicalData.reduce((sum, d) => sum + d.value, 0) / historicalData.length;
-      if (currentValue > avgRevenue) highlights.push("Suas receitas estão acima da média");
-      else highlights.push("Suas receitas estão abaixo da média histórica");
+      if (historicalData.length >= 2) {
+        if (currentValue > avgLast6Months) {
+          highlights.push(`Receitas ${((currentValue / avgLast6Months - 1) * 100).toFixed(0)}% acima da média`);
+        } else {
+          highlights.push("Suas receitas estão abaixo da média histórica");
+        }
+      }
+
+      const maxRevenue = Math.max(...historicalData.map(d => d.value));
+      if (currentValue === maxRevenue && historicalData.length > 1) {
+        highlights.push("Melhor mês de receitas até agora!");
+      }
     }
 
     if (type === "expense") {
-      const avgExpense = historicalData.reduce((sum, d) => sum + d.value, 0) / historicalData.length;
-      if (currentValue > avgExpense) highlights.push("Suas despesas estão acima da média - considere revisar");
-      else highlights.push("Suas despesas estão controladas");
+      if (historicalData.length >= 2) {
+        if (currentValue > avgLast6Months) {
+          highlights.push(`Despesas ${((currentValue / avgLast6Months - 1) * 100).toFixed(0)}% acima da média - considere revisar`);
+        } else {
+          highlights.push("Suas despesas estão controladas e abaixo da média");
+        }
+      }
+
+      if (trend === "down") {
+        highlights.push("Tendência positiva: despesas em queda!");
+      }
     }
 
     if (type === "savings") {
       if (currentValue >= 20) highlights.push("Excelente! Você está economizando 20% ou mais");
       else if (currentValue >= 10) highlights.push("Boa taxa de economia, mas pode melhorar");
       else highlights.push("Taxa de economia baixa - priorize aumentá-la");
+
+      if (historicalData.length >= 3) {
+        const avgSavings = avgLast6Months;
+        if (currentValue > avgSavings) {
+          highlights.push(`Economizando mais que a média (${avgSavings.toFixed(1)}%)`);
+        }
+      }
     }
 
     return {
@@ -434,6 +471,7 @@ const Index = () => {
       percentageChange,
       comparison: "vs mês anterior",
       highlights,
+      avgLast6Months,
     };
   };
 
